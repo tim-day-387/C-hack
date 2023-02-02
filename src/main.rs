@@ -106,7 +106,7 @@ fn check_global_config(verbose:bool, mut path:PathBuf) -> Result<(), String> {
     let scrape_config:Config = serde_yaml::from_reader(f).expect("Could not read values.");
 
     if verbose {
-	println!("{:?}", scrape_config);
+	println!("{scrape_config:?}");
     }
 
     Ok(())
