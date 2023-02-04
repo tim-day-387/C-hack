@@ -24,10 +24,16 @@ struct Config {
     remove: Vec<String>
 }
 
-fn main() -> Result<(), ()> {
+fn main() {
+    match chack() {
+	Ok(_) => (),
+	Err(e) => println!("{e}")
+    }
+}
+
+fn chack() -> Result<(), String> {
     let mut config_directory = PathBuf::new();
     let args = Args::parse();
-    let mut failed = false;
 
     match check_config_directory(args.verbose) {
 	Ok(i) => {
@@ -37,28 +43,18 @@ fn main() -> Result<(), ()> {
 	    }
 	},
 	Err(e) => {
-	    println!("{e}");
-	    failed = true;
+	    return Err(e);
 	},
     };
 
-    if failed {
-	return Err(());
-    }
-
     match check_global_config(args.verbose, config_directory) {
-	Ok(_i) => if args.verbose {
+	Ok(_) => if args.verbose {
 	    println!("Found or created default configuration.");
 	},
 	Err(e) => {
-	    println!("{e}");
-	    failed = true;
+	    return Err(e);
 	},
     };
-
-    if failed {
-	return Err(());
-    }
 
     let mut echo_hello = Command::new("echo");
 
