@@ -1,21 +1,51 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use clap::{Args, Parser};
 use std::path::PathBuf;
 use serde_yaml::{self};
-use clap::Parser;
 use std::fs;
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+#[command(propagate_version = true)]
+struct Arguments {
+    #[command(subcommand)]
+    commands: Commands,
+
+    /// Output verbose logging
+    #[clap(global = true)]
     #[arg(short, long)]
     verbose: bool,
+}
 
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// Create new compiler profile
+    Create(Create),
+
+    /// List all compiler profiles
+    List(List),
+
+    /// Enable/disable a given compiler profile
+    Toggle(Toggle)
+}
+
+#[derive(Args)]
+struct Create {
+    /// Compiler profile name
     #[arg(short, long)]
-    name: String,
+    name: String
+}
 
-    #[arg(short, long, default_value_t = 1)]
-    count: u8,
+#[derive(Args)]
+struct List {
+}
+
+#[derive(Args)]
+struct Toggle {
+    /// Compiler profile name
+    #[arg(short, long)]
+    name: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,7 +63,7 @@ fn main() {
 
 fn chack() -> Result<(), String> {
     let mut config_directory = PathBuf::new();
-    let args = Args::parse();
+    let args = Arguments::parse();
 
     match check_config_directory(args.verbose) {
 	Ok(i) => {
@@ -60,7 +90,17 @@ fn chack() -> Result<(), String> {
 
     echo_hello.arg("-n");
     echo_hello.arg("Hello");
-    echo_hello.arg(format!("{}!", args.name));
+    match &args.commands {
+        Commands::Create(i) => {
+	    echo_hello.arg(format!("Create {}!", i.name));
+        }
+        Commands::List(_) => {
+	    echo_hello.arg("List!");
+        }
+        Commands::Toggle(i) => {
+	    echo_hello.arg(format!("Toggle {}!", i.name));
+        }
+    }
 
     let hello_1 = echo_hello.output().expect("Error!");
     let output = match std::str::from_utf8(&hello_1.stdout) {
@@ -68,10 +108,8 @@ fn chack() -> Result<(), String> {
 	Err(_e) => "Error!"
     };
 
-    for _ in 0..args.count {
-	if args.verbose {
-	    println!("{output}");
-	}
+    if args.verbose {
+	println!("{output}");
     }
 
     Ok(())
