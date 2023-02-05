@@ -10,7 +10,7 @@ use std::fs;
 #[command(propagate_version = true)]
 struct Arguments {
     #[command(subcommand)]
-    commands: Commands,
+    commands: Option<Commands>,
 
     /// Output verbose logging
     #[clap(global = true)]
@@ -87,24 +87,12 @@ fn chack() -> Result<(), String> {
     };
 
     match &args.commands {
-        Commands::Create(_) => {
-        }
-        Commands::List(_) => {
-        }
-        Commands::Toggle(_) => {
-        }
-        Commands::Show(i) => {
-	    match read_profile(config_directory, i.name.clone(), args.verbose) {
-		Ok(i) => {
-		    print!("{}", serde_yaml::to_string(&i).unwrap());
-		    return Ok(());
-		},
-		Err(e) => {
-		    return Err(e)
-		},
-	    };
-        }
-    }
+	Some(i) => match run_sub_command(i, config_directory, args.verbose) {
+	    Ok(_) => return Ok(()),
+	    Err(e) => return Err(e)
+	},
+	None => ()
+    };
 
     let mut echo_hello = Command::new("echo");
 
@@ -122,6 +110,31 @@ fn chack() -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn run_sub_command(commands:&Commands, config_directory:PathBuf, verbose:bool) -> Result<(), String> {
+    match commands {
+	Commands::Create(_) => {
+	    Ok(())
+	}
+	Commands::List(_) => {
+	    Ok(())
+	}
+	Commands::Toggle(_) => {
+	    Ok(())
+	}
+	Commands::Show(i) => {
+            match read_profile(config_directory, i.name.clone(), verbose) {
+		Ok(i) => {
+                    print!("{}", serde_yaml::to_string(&i).unwrap());
+                    return Ok(());
+		},
+		Err(e) => {
+                    return Err(e)
+		},
+            };
+	}
+    }
 }
 
 fn check_config_directory(verbose:bool) -> Result<PathBuf, String> {
