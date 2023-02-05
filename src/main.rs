@@ -17,6 +17,7 @@ struct Arguments {
     verbose: bool,
 
     /// Arguments to the C compiler
+    #[clap(allow_hyphen_values = true)]
     cflags: Vec<String>
 }
 
@@ -116,6 +117,10 @@ fn chack() -> Result<(), String> {
 	}
     };
 
+    if verbose {
+	println!("COMMAND: {program:?}");
+    }
+
     let results = match program.output() {
 	Ok(i) => {
 	    if verbose {
@@ -135,8 +140,16 @@ fn chack() -> Result<(), String> {
 	}
     };
 
+    let error = match std::str::from_utf8(&results.stderr) {
+	Ok(i) => i,
+	Err(_) => {
+	    return Err("Could not parse output!".to_string());
+	}
+    };
+
     if verbose {
-	println!("{output}");
+	println!("STDOUT: {output}");
+	println!("STDERR: {error}");
     }
 
     Ok(())
