@@ -6,10 +6,9 @@ use serde_yaml::{self};
 use std::fs;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-#[command(propagate_version = true)]
+#[clap(author, version, about, long_about = None, propagate_version = true)]
 struct Arguments {
-    #[command(subcommand)]
+    #[clap(subcommand)]
     commands: Option<Commands>,
 
     /// Output verbose logging
@@ -17,7 +16,7 @@ struct Arguments {
     #[arg(short, long)]
     verbose: bool,
 
-    #[clap(raw = true)]
+    /// Arguments to the C compiler
     cflags: Vec<String>
 }
 
@@ -77,10 +76,11 @@ fn main() {
 
 fn chack() -> Result<(), String> {
     let args = Arguments::parse();
+    let verbose = args.verbose;
 
-    let config_directory = match check_config_directory(args.verbose) {
+    let config_directory = match check_config_directory(verbose) {
 	Ok(i) => {
-	    if args.verbose {
+	    if verbose {
 		println!("Found or created configuration directory.");
 	    }
 	    i
@@ -91,7 +91,7 @@ fn chack() -> Result<(), String> {
     };
 
     match &args.commands {
-	Some(i) => match run_sub_command(i, config_directory, args.verbose) {
+	Some(i) => match run_sub_command(i, config_directory, verbose) {
 	    Ok(_) => return Ok(()),
 	    Err(e) => return Err(e)
 	},
@@ -99,7 +99,7 @@ fn chack() -> Result<(), String> {
     };
 
     let mut program;
-    match read_profile(config_directory, "default".to_string(), args.verbose) {
+    match read_profile(config_directory, "default".to_string(), verbose) {
 	Ok(i) => {
             program = Command::new(i.path);
 	    for arg in i.add {
@@ -118,7 +118,7 @@ fn chack() -> Result<(), String> {
 
     let results = match program.output() {
 	Ok(i) => {
-	    if args.verbose {
+	    if verbose {
 		println!("Program ran correctly");
 	    }
 	    i
@@ -135,7 +135,7 @@ fn chack() -> Result<(), String> {
 	}
     };
 
-    if args.verbose {
+    if verbose {
 	println!("{output}");
     }
 
