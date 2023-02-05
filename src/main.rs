@@ -149,12 +149,12 @@ fn run_sub_command(commands:&Commands, config_directory:PathBuf, verbose:bool) -
             match read_profile(config_directory, i.name.clone(), verbose) {
 		Ok(i) => {
                     print!("{}", serde_yaml::to_string(&i).unwrap());
-                    return Ok(());
+                    Ok(())
 		},
 		Err(e) => {
-                    return Err(e)
+                    Err(e)
 		},
-            };
+            }
 	}
     }
 }
