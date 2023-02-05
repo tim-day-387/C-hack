@@ -60,6 +60,7 @@ struct Show {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
+    path: String,
     add: Vec<String>,
     remove: Vec<String>
 }
@@ -83,7 +84,7 @@ fn chack() -> Result<(), String> {
 	},
 	Err(e) => {
 	    return Err(e);
-	},
+	}
     };
 
     match &args.commands {
@@ -94,15 +95,36 @@ fn chack() -> Result<(), String> {
 	None => ()
     };
 
-    let mut echo_hello = Command::new("echo");
+    let mut program;
+    match read_profile(config_directory, "default".to_string(), args.verbose) {
+	Ok(i) => {
+            program = Command::new(i.path);
+	    for arg in i.add {
+		program.arg(arg);
+	    }
+	},
+	Err(e) => {
+            return Err(e)
+	}
+    };
 
-    echo_hello.arg("-n");
-    echo_hello.arg("Hello");
+    let results = match program.output() {
+	Ok(i) => {
+	    if args.verbose {
+		println!("Program ran correctly");
+	    }
+	    i
+	},
+	Err(_) => {
+            return Err("Program failed!".to_string());
+	}
+    };
 
-    let hello_1 = echo_hello.output().expect("Error!");
-    let output = match std::str::from_utf8(&hello_1.stdout) {
+    let output = match std::str::from_utf8(&results.stdout) {
 	Ok(i) => i,
-	Err(_e) => "Error!"
+	Err(_) => {
+	    return Err("Could not parse output!".to_string());
+	}
     };
 
     if args.verbose {
