@@ -16,6 +16,9 @@ struct Arguments {
     #[clap(global = true)]
     #[arg(short, long)]
     verbose: bool,
+
+    #[clap(raw = true)]
+    cflags: Vec<String>
 }
 
 #[derive(clap::Subcommand)]
@@ -101,6 +104,11 @@ fn chack() -> Result<(), String> {
             program = Command::new(i.path);
 	    for arg in i.add {
 		program.arg(arg);
+	    }
+	    for arg in args.cflags {
+		if !i.remove.contains(&arg) {
+		    program.arg(arg);
+		}
 	    }
 	},
 	Err(e) => {
