@@ -27,7 +27,10 @@ enum Commands {
     List(List),
 
     /// Enable/disable a given compiler profile
-    Toggle(Toggle)
+    Toggle(Toggle),
+
+    /// Show compiler profile
+    Show(Show)
 }
 
 #[derive(Args)]
@@ -48,6 +51,13 @@ struct Toggle {
     name: String
 }
 
+#[derive(Args)]
+struct Show {
+    /// Compiler profile name
+    #[arg(short, long)]
+    name: String
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
     add: Vec<String>,
@@ -57,50 +67,49 @@ struct Config {
 fn main() {
     match chack() {
 	Ok(_) => (),
-	Err(e) => println!("{e}")
+	Err(e) => eprintln!("{e}")
     }
 }
 
 fn chack() -> Result<(), String> {
-    let mut config_directory = PathBuf::new();
     let args = Arguments::parse();
 
-    match check_config_directory(args.verbose) {
+    let config_directory = match check_config_directory(args.verbose) {
 	Ok(i) => {
-	    config_directory = i;
 	    if args.verbose {
 		println!("Found or created configuration directory.");
 	    }
+	    i
 	},
 	Err(e) => {
 	    return Err(e);
 	},
     };
 
-    match check_global_config(args.verbose, config_directory) {
-	Ok(_) => if args.verbose {
-	    println!("Found or created default configuration.");
-	},
-	Err(e) => {
-	    return Err(e);
-	},
-    };
+    match &args.commands {
+        Commands::Create(_) => {
+        }
+        Commands::List(_) => {
+        }
+        Commands::Toggle(_) => {
+        }
+        Commands::Show(i) => {
+	    match read_profile(config_directory, i.name.clone(), args.verbose) {
+		Ok(i) => {
+		    print!("{}", serde_yaml::to_string(&i).unwrap());
+		    return Ok(());
+		},
+		Err(e) => {
+		    return Err(e)
+		},
+	    };
+        }
+    }
 
     let mut echo_hello = Command::new("echo");
 
     echo_hello.arg("-n");
     echo_hello.arg("Hello");
-    match &args.commands {
-        Commands::Create(i) => {
-	    echo_hello.arg(format!("Create {}!", i.name));
-        }
-        Commands::List(_) => {
-	    echo_hello.arg("List!");
-        }
-        Commands::Toggle(i) => {
-	    echo_hello.arg(format!("Toggle {}!", i.name));
-        }
-    }
 
     let hello_1 = echo_hello.output().expect("Error!");
     let output = match std::str::from_utf8(&hello_1.stdout) {
@@ -133,15 +142,30 @@ fn check_config_directory(verbose:bool) -> Result<PathBuf, String> {
     }
 }
 
-fn check_global_config(verbose:bool, mut path:PathBuf) -> Result<(), String> {
-    path.push("default.yaml");
-
-    let f = std::fs::File::open(path).expect("Could not open file.");
-    let scrape_config:Config = serde_yaml::from_reader(f).expect("Could not read values.");
-
-    if verbose {
-	println!("{scrape_config:?}");
-    }
-
+fn _list_profiles(_path:PathBuf, _verbose:bool) -> Result<(), String> {
     Ok(())
+}
+
+fn _create_profile(mut path:PathBuf, name:String, _verbose:bool) -> Result<(), String> {
+    path.push(name);
+    Ok(())
+}
+
+fn read_profile(mut path:PathBuf, name:String, verbose:bool) -> Result<Config, String> {
+    path.push(name);
+
+    let file = match std::fs::File::open(path) {
+	Ok(i) => i,
+	Err(_) => return Err("Could not open file!".to_string())
+    };
+
+    match serde_yaml::from_reader(file) {
+	Ok(i) => {
+	    if verbose {
+		println!("{i:?}");
+	    }
+	    Ok(i)
+	},
+	Err(_) => Err("Could not read yaml!".to_string())
+    }
 }
