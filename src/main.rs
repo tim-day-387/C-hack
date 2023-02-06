@@ -1,5 +1,5 @@
+use std::process::{Command, ExitCode};
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use clap::{Args, Parser};
 use std::path::PathBuf;
 use serde_yaml::{self};
@@ -68,10 +68,15 @@ struct Config {
     remove: Vec<String>
 }
 
-fn main() {
+fn main() -> ExitCode {
     match chack() {
-	Ok(_) => (),
-	Err(e) => eprintln!("{e}")
+	Ok(_) => {
+	    ExitCode::from(0)
+	},
+	Err(e) => {
+	    eprintln!("{e}");
+	    ExitCode::from(1)
+	}
     }
 }
 
@@ -117,10 +122,6 @@ fn chack() -> Result<(), String> {
 	}
     };
 
-    if verbose {
-	println!("COMMAND: {program:?}");
-    }
-
     let results = match program.output() {
 	Ok(i) => {
 	    if verbose {
@@ -129,7 +130,7 @@ fn chack() -> Result<(), String> {
 	    i
 	},
 	Err(_) => {
-            return Err("Program failed!".to_string());
+            return Err("Program could not be run!".to_string());
 	}
     };
 
@@ -147,12 +148,17 @@ fn chack() -> Result<(), String> {
 	}
     };
 
-    if verbose {
+    if verbose || !results.status.success() {
+	println!("COMMAND: {program:?}");
 	println!("STDOUT: {output}");
 	println!("STDERR: {error}");
     }
 
-    Ok(())
+    if results.status.success() {
+	Ok(())
+    } else {
+	Err("Program failed!".to_string())
+    }
 }
 
 fn run_sub_command(commands:&Commands, config_directory:PathBuf, verbose:bool) -> Result<(), String> {
