@@ -13,7 +13,7 @@ struct Arguments {
 
     /// Output verbose logging
     #[clap(global = true)]
-    #[arg(short, long)]
+    #[arg(long)]
     verbose: bool,
 
     /// Arguments to the C compiler
