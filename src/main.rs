@@ -149,9 +149,9 @@ fn chack() -> Result<(), String> {
     };
 
     if verbose || !results.status.success() {
-	println!("COMMAND: {program:?}");
-	println!("STDOUT: {output}");
-	println!("STDERR: {error}");
+	eprintln!("COMMAND: {program:?}");
+	eprintln!("STDOUT: {output}");
+	eprintln!("STDERR: {error}");
     }
 
     if results.status.success() {
